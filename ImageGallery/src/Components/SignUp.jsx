@@ -24,12 +24,12 @@ const SignupSchema = Yup.object().shape({
 });
 
 const SignUp = () => {
+  const { Signup_axios } = useAuth();
 
-    const { Signup_axios } = useAuth()
   return (
     <div className="flex flex-col h-screen bg-black opacity-90">
       <div className="flex flex-grow flex-col md:flex-row">
-        <div className="w-full md:w-1/2 flex  justify-center items-center relative">
+        <div className="w-full md:w-1/2 flex justify-center items-center relative">
           <Formik
             initialValues={{
               username: "",
@@ -38,11 +38,8 @@ const SignUp = () => {
               con_password: "",
             }}
             validationSchema={SignupSchema}
-            onSubmit={(values, { setSubmiting }) => {
-              console.log("sign in vlaue", values);
-
-              //   setSubmiting(false);
-              Signup_axios(values)
+            onSubmit={(values, { setSubmitting }) => {
+              Signup_axios(values, setSubmitting);
             }}
           >
             {({ isSubmitting }) => (
@@ -112,7 +109,7 @@ const SignUp = () => {
                   {isSubmitting ? (
                     <div className="border-t-4 border-emerald-600 border-solid rounded-full w-6 h-6 animate-spin"></div>
                   ) : (
-                    "Log in"
+                    "Sign up"
                   )}
                 </button>
 

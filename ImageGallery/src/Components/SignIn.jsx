@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Forget_Password from "./Forget_Password";
+import useAuth from "../Hooks/useAuth";
 
 const SigninSchema = Yup.object().shape({
   email: Yup.string().email("Invalid format").required("Email is required"),
@@ -16,6 +17,7 @@ const SigninSchema = Yup.object().shape({
 
 const SignIn = () => {
   const [openModal, setOpenModal] = useState(false);
+  const {Signin_axios}= useAuth()
 
   const handleClose = () => {
     setOpenModal(false);
@@ -43,8 +45,9 @@ const SignIn = () => {
             validationSchema={SigninSchema}
             onSubmit={(values, { setSubmitting }) => {
               console.log("Signing in with:", values);
-              // Add authentication logic here
-              setSubmitting(false);
+
+              Signin_axios(values,setSubmitting)
+              
             }}
           >
             {({ isSubmitting }) => (
