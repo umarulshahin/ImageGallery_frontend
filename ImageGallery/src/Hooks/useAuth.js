@@ -1,12 +1,17 @@
 import axios from 'axios';
-import { Signin_URL, Signup_URL } from '../Utils/Constance';
+import { Forget_password_URL, Newpassword_URL, Signin_URL, Signup_URL } from '../Utils/Constance';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie'
 import { jwtDecode } from "jwt-decode";
+import { useDispatch } from 'react-redux';
+import { addEmail } from '../Redux/UserSlice';
 
 const useAuth = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+
   const Signup_axios = async (data, setSubmitting) => {
     const formdata = new FormData();
     formdata.append('username', data.username);
@@ -46,16 +51,15 @@ const useAuth = () => {
   const Signin_axios = async(data,setSubmitting)=>{
      
     try{
-      const responds = await axios.post(Signin_URL,data,{
+      const response = await axios.post(Signin_URL,data,{
         headers:{
           'Content-Type':'application/json'
         }
       })
-      if(responds.status===200){
-        console.log(responds.data,'sign in ')
-        const userdetail = jwtDecode(responds.data.access)
-        console.log(userdetail,'userdetails')
-        Cookies.set('UserCookie',JSON.stringify(responds.data),{expires:30})
+      if(response.status===200){
+
+        const userdetail = jwtDecode(response.data.access)
+        Cookies.set('UserCookie',JSON.stringify(response.data),{expires:30})
         navigate('/home')
       }
     
@@ -74,7 +78,59 @@ const useAuth = () => {
     }
     
   }
-  return { Signup_axios, Signin_axios };
+
+  const Forget_Password_axios = async (urls,data)=>{
+    console.log(data,'frorget password ')
+    try{
+      const response = await axios.post(urls,data,{
+        headers:{
+          'Content-Type':'application/json'
+
+        }
+      })
+      if(response.status === 200){
+        console.log(response.data,'froget password')
+        if(response.data.message === 'OTP sent successfully'){
+            console.log(response.data.email)
+             dispatch(addEmail(response.data.email))
+             navigate('/auth',{state:'otp'})
+             toast.success('OTP sent successfully')
+
+        }else if (response.data.message === 'OTP successfull'){
+          navigate('/auth',{state:'Newpassword'})
+
+          toast.success(response.data.message)
+        }
+
+      }
+    }catch(error){
+      console.log(error,'forget password')
+      if(error.response.data.error){
+        toast.warning(error.response.data.error)
+      }
+    }
+  }
+
+  const Newpassword_axios = async(data)=>{
+    const formdata = new FormData()
+    formdata.append('email',data.email)
+    formdata.append('password',data.password)
+    try{
+     const response = await axios.patch(Newpassword_URL,formdata,{
+      headers:{
+         'Content-Type': 'multipart/form-data',
+      }
+     })
+     if(response.status === 200){
+      console.log(response.data,'new password')
+      navigate('/')
+      toast.success('Password updated successfully')
+     }
+    }catch(error){
+      console.log(error,'new password')
+    }
+  }
+  return { Signup_axios, Signin_axios,Forget_Password_axios,Newpassword_axios};
 };
 
 export default useAuth;

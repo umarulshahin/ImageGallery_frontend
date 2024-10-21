@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Forget_Password from "./Forget_Password";
@@ -17,20 +17,18 @@ const SigninSchema = Yup.object().shape({
 
 const SignIn = () => {
   const [openModal, setOpenModal] = useState(false);
+  const navigate = useNavigate()
   const {Signin_axios}= useAuth()
 
-  const handleClose = () => {
-    setOpenModal(false);
-  };
+  const handleForget=()=>{
+   
+    navigate('/auth',{state:'forget'} )
+  }
 
   return (
     <div className="flex flex-col h-screen bg-black opacity-90">
       <div className="flex flex-grow flex-col md:flex-row">
-        {openModal && (
-          <div>
-            <Forget_Password close={handleClose} />
-          </div>
-        )}
+      
         <div className="hidden md:block w-full md:w-1/2">
           <iframe
             className="h-full w-full object-cover"
@@ -76,7 +74,7 @@ const SignIn = () => {
                 <ErrorMessage name="password" component="div" className="text-red-600" />
                 
                 <span
-                  onClick={() => setOpenModal(true)}
+                  onClick={() => handleForget()}
                   className="text-emerald-600 text-center cursor-pointer hover:text-emerald-800 pt-2"
                 >
                   Forgot password?
