@@ -6,7 +6,8 @@ const UserSlice = createSlice({
 
     initialState:{
        email : ''  ,
-       user : {}
+       user : {},
+       images : {}
     },
     reducers:{
         addEmail:(state,action)=>{
@@ -14,6 +15,9 @@ const UserSlice = createSlice({
         },
         addUser:(state,action)=>{
             state.user=action.payload
+        },
+        addImages:(state,action)=>{
+            state.images=action.payload
         },
         ClearUser:(state,action)=>{
             state.user = {}
@@ -23,6 +27,6 @@ const UserSlice = createSlice({
 
 })
 
-export const {addEmail,addUser,ClearUser}=UserSlice.actions
+export const {addEmail,addUser,ClearUser,addImages}=UserSlice.actions
 
 export default UserSlice.reducer;

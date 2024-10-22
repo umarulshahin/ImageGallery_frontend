@@ -9,4 +9,8 @@ export const Forget_password_URL = Backend_URl+'Api/forgetPassword/';
 
 export const OTP_validation_URL = Backend_URl+'Api/otp_validation/';
 
-export const Newpassword_URL = Backend_URl+'Api/newpassword/'
+export const Newpassword_URL = Backend_URl+'Api/newpassword/';
+
+export const Image_upload_URL = Backend_URl+'Api/image_upload/';
+
+export const Get_Image_URL = Backend_URl+'Api/getimage/'
