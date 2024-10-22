@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie'
 import { jwtDecode } from "jwt-decode";
 import { useDispatch } from 'react-redux';
-import { addEmail } from '../Redux/UserSlice';
+import { addEmail, addUser } from '../Redux/UserSlice';
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -60,6 +60,7 @@ const useAuth = () => {
 
         const userdetail = jwtDecode(response.data.access)
         Cookies.set('UserCookie',JSON.stringify(response.data),{expires:30})
+        dispatch(addUser(userdetail))
         navigate('/home')
       }
     

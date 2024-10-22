@@ -8,6 +8,8 @@ import ModalManager from './Components/ModalManager';
 import { PersistGate } from 'redux-persist/integration/react';
 import { appStore, persist } from './Redux/Store';
 import { Provider } from "react-redux";
+import PrivetRoute from './PrivetRoute';
+import AuthPrivetRoute from './AuthPrivetRoute';
 
 function App() {
 
@@ -18,10 +20,10 @@ function App() {
     <Toaster richColors  position="top-center" />
     <Router>
       <Routes>
-        <Route path="/" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/home" element={<Home_Page />} />
-        <Route path='/auth' element={<ModalManager />} />
+        <Route path="/" element={<AuthPrivetRoute><SignIn /></AuthPrivetRoute>} />
+        <Route path="/signup" element={<AuthPrivetRoute><SignUp /></AuthPrivetRoute>} />
+        <Route path="/home" element={<PrivetRoute><Home_Page /></PrivetRoute>} />
+        <Route path='/auth' element={<AuthPrivetRoute><ModalManager /></AuthPrivetRoute>} />
       </Routes>
     </Router>
     </PersistGate>

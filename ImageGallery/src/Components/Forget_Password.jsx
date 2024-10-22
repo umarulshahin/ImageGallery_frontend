@@ -11,7 +11,6 @@ const Forget_Password = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
  
-    setMessage("Password reset OTP sent to your email!");
     console.log(e.target.email.value)
     const email = e.target.email.value
     
@@ -38,7 +37,6 @@ const Forget_Password = () => {
             className="py-3 rounded-2xl px-4 bg-gray-700 border-2 border-gray-400 text-white focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4"
             required
           />
-          {message && <div className="text-green-500 mb-4 text-center">{message}</div>}
           <button
             type="submit"
             className="text-white py-3 px-4 bg-emerald-600 rounded-3xl font-semibold hover:bg-emerald-700"
