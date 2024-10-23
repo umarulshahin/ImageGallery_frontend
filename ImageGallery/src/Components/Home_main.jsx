@@ -2,41 +2,118 @@ import React, { useEffect, useState } from "react";
 import useUser from "../Hooks/useUser";
 import { useSelector } from "react-redux";
 import { Backend_URl } from "../Utils/Constance";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import axios from "axios";
+import { SortableImage } from "./SortableImage";
 
 const Home_main = () => {
-  // State to manage multiple image uploads
   const [images, setImages] = useState([{ file: null, description: "" }]);
   const [newImage, setNewImage] = useState(false);
-  const { Image_Upload_axios, Get_Image_axios } = useUser();
+  const { Image_Upload_axios, Get_Image_axios,Image_Ordering_axios } = useUser();
   const userimages = useSelector((state) => state.userdata.images);
+  const [orderedImages, setOrderedImages] = useState([]);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
-  // Handle adding new image upload field
-  const handleAddMore = () => {
-    setImages([...images, { file: null, description: "" }]);
-  };
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     Get_Image_axios();
   }, []);
-  // Handle file change
+
+  useEffect(() => {
+    if (userimages) {
+      const processedImages = userimages.map((img, index) => ({
+        ...img,
+        id: img.id ? String(img.id) : String(index),
+        order: img.order || index // Use existing order or fallback to index
+      }));
+      // Sort by order field
+      const sortedImages = [...processedImages].sort((a, b) => a.order - b.order);
+      setOrderedImages(sortedImages);
+    }
+  }, [userimages]);
+
+  // Function to update order in backend
+  const updateImageOrder = async (reorderedImages) => {
+   
+      setIsUpdatingOrder(true);
+      
+      // Create array of { id, order } objects
+      const orderUpdates = reorderedImages.map((image, index) => ({
+        id: image.id,
+        order: index
+      }));
+      console.log(orderUpdates,'order update')
+      Image_Ordering_axios(orderUpdates,setOrderedImages,setIsUpdatingOrder)
+
+      setIsUpdatingOrder(false);
+ 
+      setOrderedImages(prevImages => [...prevImages]);
+    
+  };
+
   const handleFileChange = (index, e) => {
     const newImages = [...images];
     newImages[index].file = e.target.files[0];
     setImages(newImages);
   };
 
-  // Handle description change
   const handleDescriptionChange = (index, e) => {
     const newImages = [...images];
     newImages[index].description = e.target.value;
     setImages(newImages);
   };
-  console.log(images);
 
-  const handleUpload = () => {
-    Image_Upload_axios(images);
-    setImages([{ file: null, description: "" }]);
+  const handleAddMore = () => {
+    setImages([...images, { file: null, description: "" }]);
   };
+
+  const handleUpload = async () => {
+    try {
+      await Image_Upload_axios(images);
+      setImages([{ file: null, description: "" }]);
+      // Refresh images after upload
+      await Get_Image_axios();
+    } catch (error) {
+      console.error('Failed to upload images:', error);
+    }
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over.id) {
+      setOrderedImages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Update backend order
+        updateImageOrder(newOrder);
+        
+        return newOrder;
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <div className="mt-10 flex justify-end mr-10">
@@ -49,7 +126,7 @@ const Home_main = () => {
       </div>
 
       {newImage && (
-        <div className="flex flex-col w-1/2 space-y-2  px-10">
+        <div className="flex flex-col w-1/2 space-y-2 px-10">
           {images.map((image, index) => (
             <div key={index} className="space-y-2 space-x-2">
               <input
@@ -67,16 +144,11 @@ const Home_main = () => {
             </div>
           ))}
 
-          {/* Add More Button */}
           <button
-            disabled={
-              !images[images.length - 1].file ||
-              !images[images.length - 1].description
-            }
+            disabled={!images[images.length - 1].file || !images[images.length - 1].description}
             onClick={handleAddMore}
             className={`py-2 px-4 rounded-lg text-lg font-bold text-white ${
-              !images[images.length - 1].file ||
-              !images[images.length - 1].description
+              !images[images.length - 1].file || !images[images.length - 1].description
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-800"
             }`}
@@ -84,12 +156,11 @@ const Home_main = () => {
             Add More
           </button>
 
-          {/* Upload Button */}
           <button
-            disabled={!images[0].file || !images[0].description}
-            onClick={() => handleUpload()}
+            disabled={!images[0].file || !images[0].description || isUpdatingOrder}
+            onClick={handleUpload}
             className={`py-2 px-4 rounded-lg text-lg font-bold text-white ${
-              !images[0].file || !images[0].description
+              !images[0].file || !images[0].description || isUpdatingOrder
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-800"
             }`}
@@ -98,20 +169,31 @@ const Home_main = () => {
           </button>
         </div>
       )}
-      <div className="grid grid-cols-6 gap-4 p-10 rounded-lg border-2 border-gray-300 m-10">
-        {userimages &&
-          userimages.map((data, index) => (
-            <div key={index} className="image-container  ">
-              <img
-                src={Backend_URl + data.image} // Assuming `data.image` holds the image URL or path
-                alt={`Image ${index + 1}`}
-                className="w-48 h-48 object-cover border-2 border-gray-400 rounded-lg" // You can adjust the styling as needed
-              />
-              <p className="text-black">{data.descriptions}</p>{" "}
-              {/* Assuming there's a description for each image */}
+
+      {orderedImages && orderedImages.length > 0 && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedImages.map(item => item.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-10 rounded-lg border-2 border-gray-300 m-10">
+              {orderedImages.map((data) => (
+                <SortableImage
+                  key={data.id}
+                  id={data.id}
+                  image={Backend_URl + data.image}
+                  description={data.descriptions}
+                  isUpdatingOrder={isUpdatingOrder}
+                />
+              ))}
             </div>
-          ))}
-      </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 };

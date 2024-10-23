@@ -1,6 +1,6 @@
 import React from 'react'
 import UserAxios from '../Axios/UserAxios'
-import { Get_Image_URL, Image_upload_URL } from '../Utils/Constance'
+import { Get_Image_URL, Image_Order_URL, Image_upload_URL } from '../Utils/Constance'
 import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
 import { addImages } from '../Redux/UserSlice'
@@ -20,6 +20,7 @@ const useUser = () => {
            
                 console.log(response.data,'image upload')
                 toast.success(response.data)
+                Get_Image_axios()
             
         }
     }catch(error){
@@ -45,7 +46,27 @@ const useUser = () => {
         console.log(error,'get image')
     }
   }
-  return {Image_Upload_axios,Get_Image_axios}
+
+  const Image_Ordering_axios= async (orderUpdates,setOrderedImages,setIsUpdatingOrder)=>{
+
+    try{
+
+      const response = await UserAxios.put(Image_Order_URL,orderUpdates,{
+        headers:{
+          'Content-Type':'application/json'
+        }
+      })
+      if(response.status===200){
+        console.log(response.data)
+      }
+    }catch(error){
+      console.log(error)
+      setIsUpdatingOrder(false);
+ 
+      setOrderedImages(prevImages => [...prevImages]);
+    }
+  }
+  return {Image_Upload_axios,Get_Image_axios,Image_Ordering_axios}
 
 
 }
