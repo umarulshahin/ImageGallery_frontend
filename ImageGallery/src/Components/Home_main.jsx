@@ -16,16 +16,19 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import axios from "axios";
 import { SortableImage } from "./SortableImage";
+import ImageDeleteModal from "./ImageDeleteModal";
 
 const Home_main = () => {
   const [images, setImages] = useState([{ file: null, description: "" }]);
   const [newImage, setNewImage] = useState(false);
-  const { Image_Upload_axios, Get_Image_axios,Image_Ordering_axios } = useUser();
+  const { Image_Upload_axios, Get_Image_axios, Image_Ordering_axios,Image_Delete_axios } = useUser();
   const userimages = useSelector((state) => state.userdata.images);
   const [orderedImages, setOrderedImages] = useState([]);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [ErrorMessage,setErrorMessages] = useState('')
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -43,37 +46,39 @@ const Home_main = () => {
       const processedImages = userimages.map((img, index) => ({
         ...img,
         id: img.id ? String(img.id) : String(index),
-        order: img.order || index // Use existing order or fallback to index
+        order: img.order || index,
       }));
-      // Sort by order field
       const sortedImages = [...processedImages].sort((a, b) => a.order - b.order);
       setOrderedImages(sortedImages);
     }
   }, [userimages]);
 
-  // Function to update order in backend
   const updateImageOrder = async (reorderedImages) => {
-   
-      setIsUpdatingOrder(true);
-      
-      // Create array of { id, order } objects
-      const orderUpdates = reorderedImages.map((image, index) => ({
-        id: image.id,
-        order: index
-      }));
-      console.log(orderUpdates,'order update')
-      Image_Ordering_axios(orderUpdates,setOrderedImages,setIsUpdatingOrder)
-
-      setIsUpdatingOrder(false);
- 
-      setOrderedImages(prevImages => [...prevImages]);
-    
+    setIsUpdatingOrder(true);
+    const orderUpdates = reorderedImages.map((image, index) => ({
+      id: image.id,
+      order: index,
+    }));
+    await Image_Ordering_axios(orderUpdates);
+    setIsUpdatingOrder(false);
+    setOrderedImages([...reorderedImages]);
   };
 
   const handleFileChange = (index, e) => {
     const newImages = [...images];
-    newImages[index].file = e.target.files[0];
-    setImages(newImages);
+    const file = e.target.files[0];
+    newImages[index].file = file
+    const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    console.log(file.name,'file')
+    const fileExtension = file.name.split('.').pop().toLowerCase(); 
+    if (file.type.startsWith('image/') && validImageExtensions.includes(fileExtension)) {
+      setImages(newImages);
+      setErrorMessages('')
+
+
+    }else{
+      setErrorMessages('Please select a valid image file (jpg, jpeg, png, gif, webp).')
+    }
   };
 
   const handleDescriptionChange = (index, e) => {
@@ -90,29 +95,49 @@ const Home_main = () => {
     try {
       await Image_Upload_axios(images);
       setImages([{ file: null, description: "" }]);
-      // Refresh images after upload
-      await Get_Image_axios();
     } catch (error) {
-      console.error('Failed to upload images:', error);
+      console.error("Failed to upload images:", error);
     }
   };
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    
+
     if (active.id !== over.id) {
       setOrderedImages((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
         const newOrder = arrayMove(items, oldIndex, newIndex);
-        
-        // Update backend order
         updateImageOrder(newOrder);
-        
         return newOrder;
       });
     }
   };
+
+  const handleDeleteImage = (image) => {
+    setSelectedImage(image);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedImage(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedImage) {
+      console.log(selectedImage,'selected image')
+      Image_Delete_axios(selectedImage)
+    }
+    handleCloseDeleteModal();
+  };
+
+  
+  const handleEditImage = (image) => {
+    setCurrentEditImage(image);
+    setShowEditModal(true);
+  };
+
 
   return (
     <div className="min-h-screen">
@@ -128,11 +153,12 @@ const Home_main = () => {
       {newImage && (
         <div className="flex flex-col w-1/2 space-y-2 px-10">
           {images.map((image, index) => (
-            <div key={index} className="space-y-2 space-x-2">
+            <div key={index} className=" space-y-2 flex flex-col ">
               <input
                 type="file"
                 onChange={(e) => handleFileChange(index, e)}
                 className="py-2 px-4 border-2 border-gray-500 rounded-lg"
+                accept="image/*"
               />
               <input
                 type="text"
@@ -141,13 +167,15 @@ const Home_main = () => {
                 className="py-3 px-4 border-2 border-gray-500 rounded-lg font-semibold"
                 placeholder="Description"
               />
+              <p className="text-center text-red-600 text-sm font-semibold">{ErrorMessage && ErrorMessage}</p>
             </div>
+            
           ))}
-
+          <div className="flex w-full space-x-4 ">
           <button
             disabled={!images[images.length - 1].file || !images[images.length - 1].description}
             onClick={handleAddMore}
-            className={`py-2 px-4 rounded-lg text-lg font-bold text-white ${
+            className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
               !images[images.length - 1].file || !images[images.length - 1].description
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-800"
@@ -159,7 +187,7 @@ const Home_main = () => {
           <button
             disabled={!images[0].file || !images[0].description || isUpdatingOrder}
             onClick={handleUpload}
-            className={`py-2 px-4 rounded-lg text-lg font-bold text-white ${
+            className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
               !images[0].file || !images[0].description || isUpdatingOrder
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-800"
@@ -167,6 +195,8 @@ const Home_main = () => {
           >
             Upload
           </button>
+          </div>
+          
         </div>
       )}
 
@@ -187,12 +217,21 @@ const Home_main = () => {
                   id={data.id}
                   image={Backend_URl + data.image}
                   description={data.descriptions}
-                  isUpdatingOrder={isUpdatingOrder}
-                />
+                  onEdit={() => handleEditImage(data)}
+                  onDelete={() => handleDeleteImage(data)}                />
               ))}
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {showDeleteModal && (
+        
+        <ImageDeleteModal
+          isOpen={showDeleteModal}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+        />
       )}
     </div>
   );

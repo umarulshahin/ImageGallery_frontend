@@ -1,9 +1,9 @@
 import React from 'react'
 import UserAxios from '../Axios/UserAxios'
-import { Get_Image_URL, Image_Order_URL, Image_upload_URL } from '../Utils/Constance'
+import { Delete_Image_URL, Get_Image_URL, Image_Order_URL, Image_upload_URL } from '../Utils/Constance'
 import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
-import { addImages } from '../Redux/UserSlice'
+import { addImages, DeleteImage } from '../Redux/UserSlice'
 
 const useUser = () => {
   const dispatch = useDispatch()
@@ -66,7 +66,26 @@ const useUser = () => {
       setOrderedImages(prevImages => [...prevImages]);
     }
   }
-  return {Image_Upload_axios,Get_Image_axios,Image_Ordering_axios}
+
+  const Image_Delete_axios = async(selectedImage)=>{
+    console.log(selectedImage.id,'id')
+    try{
+      const response = await UserAxios.delete(Delete_Image_URL,{
+        data:selectedImage.id,
+        headers:{
+          'Content-Type':'application/json',
+        }
+      })
+      console.log(response,'response')
+      if(response.status === 200){
+        console.log(response.data,'delete image')
+        dispatch(DeleteImage(selectedImage.id))
+      }
+    }catch(error){
+      console.log(error)
+  }
+}
+  return {Image_Upload_axios,Get_Image_axios,Image_Ordering_axios,Image_Delete_axios}
 
 
 }

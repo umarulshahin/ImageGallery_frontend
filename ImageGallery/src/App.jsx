@@ -10,6 +10,7 @@ import { appStore, persist } from './Redux/Store';
 import { Provider } from "react-redux";
 import PrivetRoute from './PrivetRoute';
 import AuthPrivetRoute from './AuthPrivetRoute';
+import '@fortawesome/fontawesome-free/css/all.css';
 
 function App() {
 
