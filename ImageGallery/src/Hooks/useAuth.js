@@ -26,7 +26,6 @@ const useAuth = () => {
       });
 
       if (response.status === 201) {
-        console.log(response.data, 'sign up');
         toast.success('Signup successful!');
         navigate('/')
       }

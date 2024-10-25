@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import useUser from "../Hooks/useUser";
 import { useSelector } from "react-redux";
-import { Backend_URl } from "../Utils/Constance";
+import { Backend_URl, Image_upload_URL } from "../Utils/Constance";
 import {
   DndContext,
   closestCenter,
@@ -18,17 +18,25 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableImage } from "./SortableImage";
 import ImageDeleteModal from "./ImageDeleteModal";
+import EditImageModal from "./EditImageModal";
 
 const Home_main = () => {
   const [images, setImages] = useState([{ file: null, description: "" }]);
   const [newImage, setNewImage] = useState(false);
-  const { Image_Upload_axios, Get_Image_axios, Image_Ordering_axios,Image_Delete_axios } = useUser();
+  const {
+    Image_Upload_axios,
+    Get_Image_axios,
+    Image_Ordering_axios,
+    Image_Delete_axios,
+  } = useUser();
   const userimages = useSelector((state) => state.userdata.images);
   const [orderedImages, setOrderedImages] = useState([]);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [ErrorMessage,setErrorMessages] = useState('')
+  const [ErrorMessage, setErrorMessages] = useState("");
+  const [CurrentSelectImage , setCurrentEditImage] = useState("")
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -48,7 +56,9 @@ const Home_main = () => {
         id: img.id ? String(img.id) : String(index),
         order: img.order || index,
       }));
-      const sortedImages = [...processedImages].sort((a, b) => a.order - b.order);
+      const sortedImages = [...processedImages].sort(
+        (a, b) => a.order - b.order
+      );
       setOrderedImages(sortedImages);
     }
   }, [userimages]);
@@ -67,24 +77,44 @@ const Home_main = () => {
   const handleFileChange = (index, e) => {
     const newImages = [...images];
     const file = e.target.files[0];
-    newImages[index].file = file
-    const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    console.log(file.name,'file')
-    const fileExtension = file.name.split('.').pop().toLowerCase(); 
-    if (file.type.startsWith('image/') && validImageExtensions.includes(fileExtension)) {
+    newImages[index].file = file;
+    const validImageExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
+    console.log(file.name, "file");
+    const fileExtension = file.name.split(".").pop().toLowerCase();
+    if (
+      file.type.startsWith("image/") &&
+      validImageExtensions.includes(fileExtension)
+    ) {
       setImages(newImages);
-      setErrorMessages('')
+      setErrorMessages("");
+    } else {
 
-
-    }else{
-      setErrorMessages('Please select a valid image file (jpg, jpeg, png, gif, webp).')
+      setErrorMessages(
+        "Please select a valid image file (jpg, jpeg, png, gif, webp)."
+      );
     }
   };
 
   const handleDescriptionChange = (index, e) => {
+
+    const description = e.target.value;
     const newImages = [...images];
-    newImages[index].description = e.target.value;
+    
+    if (description.trim() === "" && description.length > 0) {
+      setErrorMessages("Please enter a valid description.");
+      newImages[index].description = "";
+      setImages(newImages);
+      return;
+    } else if (description === "") {
+      newImages[index].description = ""
+      setErrorMessages("");
+    } else {
+      setErrorMessages("");
+      newImages[index].description = description;
+    }
+  
     setImages(newImages);
+   
   };
 
   const handleAddMore = () => {
@@ -93,7 +123,7 @@ const Home_main = () => {
 
   const handleUpload = async () => {
     try {
-      await Image_Upload_axios(images);
+      await Image_Upload_axios(Image_upload_URL,images);
       setImages([{ file: null, description: "" }]);
     } catch (error) {
       console.error("Failed to upload images:", error);
@@ -126,18 +156,23 @@ const Home_main = () => {
 
   const handleConfirmDelete = async () => {
     if (selectedImage) {
-      console.log(selectedImage,'selected image')
-      Image_Delete_axios(selectedImage)
+      Image_Delete_axios(selectedImage);
     }
     handleCloseDeleteModal();
   };
 
-  
   const handleEditImage = (image) => {
+
     setCurrentEditImage(image);
     setShowEditModal(true);
-  };
 
+  };
+  
+  const handleCloseEditImage = ()=>{
+   setCurrentEditImage(null)
+   setShowEditModal(false)
+
+  }
 
   return (
     <div className="min-h-screen">
@@ -167,36 +202,42 @@ const Home_main = () => {
                 className="py-3 px-4 border-2 border-gray-500 rounded-lg font-semibold"
                 placeholder="Description"
               />
-              <p className="text-center text-red-600 text-sm font-semibold">{ErrorMessage && ErrorMessage}</p>
+              <p className="text-center text-red-600 text-sm font-semibold">
+                {ErrorMessage && ErrorMessage}
+              </p>
             </div>
-            
           ))}
           <div className="flex w-full space-x-4 ">
-          <button
-            disabled={!images[images.length - 1].file || !images[images.length - 1].description}
-            onClick={handleAddMore}
-            className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
-              !images[images.length - 1].file || !images[images.length - 1].description
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-800"
-            }`}
-          >
-            Add More
-          </button>
+            <button
+              disabled={
+                !images[images.length - 1].file ||
+                !images[images.length - 1].description
+              }
+              onClick={handleAddMore}
+              className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
+                !images[images.length - 1].file ||
+                !images[images.length - 1].description
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-800"
+              }`}
+            >
+              Add More
+            </button>
 
-          <button
-            disabled={!images[0].file || !images[0].description || isUpdatingOrder}
-            onClick={handleUpload}
-            className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
-              !images[0].file || !images[0].description || isUpdatingOrder
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-800"
-            }`}
-          >
-            Upload
-          </button>
+            <button
+              disabled={
+                !images[0].file || !images[0].description || isUpdatingOrder
+              }
+              onClick={handleUpload}
+              className={`py-2 px-4 rounded-lg w-1/2 text-lg font-bold text-white ${
+                !images[0].file || !images[0].description || isUpdatingOrder
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-800"
+              }`}
+            >
+              Upload
+            </button>
           </div>
-          
         </div>
       )}
 
@@ -207,7 +248,7 @@ const Home_main = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={orderedImages.map(item => item.id)}
+            items={orderedImages.map((item) => item.id)}
             strategy={rectSortingStrategy}
           >
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-10 rounded-lg border-2 border-gray-300 m-10">
@@ -218,7 +259,8 @@ const Home_main = () => {
                   image={Backend_URl + data.image}
                   description={data.descriptions}
                   onEdit={() => handleEditImage(data)}
-                  onDelete={() => handleDeleteImage(data)}                />
+                  onDelete={() => handleDeleteImage(data)}
+                />
               ))}
             </div>
           </SortableContext>
@@ -226,11 +268,19 @@ const Home_main = () => {
       )}
 
       {showDeleteModal && (
-        
         <ImageDeleteModal
           isOpen={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {showEditModal && (
+        <EditImageModal
+        isOpen={showEditModal}
+        onClose = {handleCloseEditImage}
+        initialImage = {CurrentSelectImage}
+        initialDescription ={CurrentSelectImage.descriptions}
         />
       )}
     </div>

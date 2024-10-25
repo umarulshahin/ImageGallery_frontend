@@ -18,3 +18,5 @@ export const Get_Image_URL = Backend_URl+'Api/getimage/';
 export const Image_Order_URL = Backend_URl+'Api/imageorder/';
 
 export const Delete_Image_URL = Backend_URl+'Api/deleteimage/';
+
+export const Update_Image_URL = Backend_URl+'Api/updateimage/';

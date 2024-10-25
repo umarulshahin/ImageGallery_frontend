@@ -23,14 +23,14 @@ const Header = () => {
   }
 
   return (
-    <div className='bg-black text-emerald-600 h-20 flex justify-between px-10 items-center opacity-90'>
+    <div className='bg-black text-emerald-500 h-20 flex justify-between px-10 items-center opacity-90'>
         <div className='text-3xl  font-bold '>
-          <i>Image Gallery</i>
+          <i>Fototus</i>
         </div>
         <div className='relative'>
       <div className='flex items-center space-x-2 cursor-pointer' onClick={()=>settoggleDropdown(!toggleDropdown)}>
         <span className='text-white text-lg font-semibold'>{username}</span>
-        <img src={profile} className='h-12 w-12 rounded-full' alt="profile" />
+        <img src={profile} className='h-10 w-10 rounded-full' alt="profile" />
       </div>
 
       {toggleDropdown && (
