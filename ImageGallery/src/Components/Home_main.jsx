@@ -183,6 +183,7 @@ const Home_main = () => {
         >
           Add New Image
         </button>
+
       </div>
 
       {newImage && (
@@ -207,6 +208,7 @@ const Home_main = () => {
               </p>
             </div>
           ))}
+
           <div className="flex w-full space-x-4 ">
             <button
               disabled={
